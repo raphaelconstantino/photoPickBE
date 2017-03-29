@@ -14,6 +14,9 @@ var schema = mongoose.Schema({
         type: String,
         required: true
     },
+    active : {
+        type: Boolean,
+    },
     votes: [{
         userVotingId: {
             type: String,
