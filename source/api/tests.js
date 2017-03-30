@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+var fs = require('fs');
 
 module.exports = function(app) {
 
@@ -85,15 +86,30 @@ module.exports = function(app) {
 	};
 
 	api.add = function(req, res) {
+		
+		var arquivo = "img-" + (new Date().getTime()) + ".png";
+		var category = req.headers.category;
+		var userId = req.headers.userid;
 
-		model.create(req.body)
-		.then(function(gender) {
-			res.end(); 
-		}, function(error) {
-			console.log(error);
-			res.sendStatus(500);
+		var obj = {
+			file : arquivo,
+			userId : userId,
+			category : category
+		}
+
+		req.pipe(fs.createWriteStream("files/" + arquivo))
+		.on('finish', function(){
+			
+			model.create(obj)
+				.then(function() {
+					res.end(); 
+				}, function(error) {
+					res.sendStatus(500);
+					console.log(error)
+				});
+
 		});
-	};
+	};	
 	
 	return api;
 };
