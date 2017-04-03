@@ -27,7 +27,11 @@ module.exports = function(app) {
 		// Também validar o karma do user para saber
 		// se ele já votou o suficiente para ser votado
 		// Irá fazer um join com tabela de usuario???
-		model.findOne({"votes.userVotingId" : { $nin : [req.params.id] } })
+		console.log(req.headers.userid)
+		model.findOne({
+			"votes.userVotingId" : { $nin : [req.headers.userid] } ,
+			"userId" : { $ne: req.headers.userid }
+		})
 		.then(function(tests) {
 			res.json(tests);
 		}, function(error) {
