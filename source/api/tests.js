@@ -1,5 +1,9 @@
 var mongoose = require('mongoose');
-var fs = require('fs');
+const formidable = require('formidable')
+const path = require('path')
+const uploadDir = path.join(__dirname, '/..', '/..', '/files/') //i made this  before the function because i use it multiple times for deleting later
+
+
 
 module.exports = function(app) {
 
@@ -8,8 +12,8 @@ module.exports = function(app) {
 	var model = mongoose.model('Tests');
 
 	api.list = function(req, res) {
-
-		model.find({userId : req.params.id})
+		
+		model.find({userId : req.headers.userid})
 		.then(function(tests) {
 			res.json(tests);
 		}, function(error) {
@@ -19,8 +23,10 @@ module.exports = function(app) {
 
 	};
 
-	api.findOne = function(req, res) {
-
+	api.findOneToVote = function(req, res) {
+		// Também validar o karma do user para saber
+		// se ele já votou o suficiente para ser votado
+		// Irá fazer um join com tabela de usuario???
 		model.findOne({"votes.userVotingId" : { $nin : [req.params.id] } })
 		.then(function(tests) {
 			res.json(tests);
@@ -32,6 +38,9 @@ module.exports = function(app) {
 	};
 
 	api.findById = function(req, res) {
+		// Abrir token e tentar pegar _id do User 
+		// para mandar junto no fetch e só retornar tests relacionados
+		// ao user logado
 		model.findOne({"_id" : req.params.id })
 		.then(function(test) {
 			
@@ -73,10 +82,21 @@ module.exports = function(app) {
 
 	};
 
+	// Request:
+	// Header: Id na url do put
+	// Body: {"userVotingId":"58dae4965218d52decbff84a", "comment":"I would Date!", "atractive" : "3", "smart" : "3", "trustworthy" : "3" }
 	api.addVote = function(req, res) {
+		// Adicionar +1pto para usuario que está votando (_id deste user está no body do request)
+		// E remover -1pto para usuario que está recebendo voto ( _id deste user está no response da operação)
+
+		var idUserVoting = req.body.userVotingId;
 
 		model.findByIdAndUpdate(req.params.id, { $push : { votes : req.body } })
-			.then(function(song) {
+			.then(function(test) {
+				// Add +1 point to user voting
+				// Remove -3 points to user being voted
+				app.api.auth.addAndRemovePoints(test.userId, idUserVoting, res);
+
 				res.end(); 
 			}, function(error) {
 				console.log(error);
@@ -85,31 +105,39 @@ module.exports = function(app) {
 
 	};
 
-	api.add = function(req, res) {
-		
-		var arquivo = "img-" + (new Date().getTime()) + ".png";
-		var category = req.headers.category;
-		var userId = req.headers.userid;
-
-		var obj = {
-			file : arquivo,
-			userId : userId,
-			category : category
-		}
-
-		req.pipe(fs.createWriteStream("files/" + arquivo))
-		.on('finish', function(){
+	api.add = function (req, res, next) { // This is just for my Controller same as app.post(url, function(req,res,next) {....
+		var form = new formidable.IncomingForm();
+		form.multiples = true;
+		form.keepExtensions = true;
+		form.uploadDir = uploadDir;
+		form.parse(req, (err, fields, files) => {
+			if (err) {
+				console.log(err)
+				return res.status(500).json({ error: err })
+			}	
 			
-			model.create(obj)
-				.then(function() {
-					res.end(); 
-				}, function(error) {
-					res.sendStatus(500);
-					console.log(error)
-				});
+		})
+		form.on('fileBegin', function (name, file) {
+			const [fileName, fileExt] = file.name.split('.');
+			var sName = path.join(uploadDir, `${fileName}_${new Date().getTime()}.${fileExt}`);
+			file.path = sName;
 
-		});
-	};	
+			// Insert findById
+			var category = req.headers.category;
+			var userId = req.headers.userid;
+
+			var obj = {
+				file : sName,
+				userId : userId,
+				category : category
+			}
+
+			model.create(obj).then(function() {});			
+		})
+		form.on('end', function (file) {
+			res.status(200).json({});
+		})
+	}
 	
 	return api;
 };

@@ -2,12 +2,23 @@ var express = require('express');
 var consign = require('consign');
 var bodyParser = require('body-parser');
 var path = require('path');
+var morgan = require('morgan');
+var logger = require('../source/services/logger.js');
 
 var app = express();
 
-//app.set('secret', 'homemavestruz'); 
+app.set('secret', 'homemavestruz'); 
 app.use(express.static(__dirname + "/public"));
 app.use(bodyParser.json());
+
+//Middleware do Morgan
+app.use(morgan("common", {
+    stream: {
+        write: function(mensagem){
+            logger.info(mensagem);
+        }
+    }
+}));
 
 consign({cwd: 'source'})
     .include('models')

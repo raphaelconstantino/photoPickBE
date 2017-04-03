@@ -17,7 +17,11 @@ var schema = mongoose.Schema({
     birthDate : {
         type : Date,
         required : true
-    }    
+    },
+    score : {
+        type : Number,
+        required : false
+    } 
 });
 
 mongoose.model('User', schema);

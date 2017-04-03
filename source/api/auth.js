@@ -6,6 +6,18 @@ module.exports = function(app) {
      var api = {};
      var model = mongoose.model('User');
 
+    api.addAndRemovePoints = function(userVoted, userVoting, res) {
+
+        // Add +1 for user voting
+        model.findByIdAndUpdate(userVoting, { $inc: { score: +1 } }).then(function(err, res) {});
+
+        // Add +1 for user voting
+        model.findByIdAndUpdate(userVoted, { $inc: { score: -3 } }).then(function(err, res) {});
+
+
+        return;
+    }
+
 	api.add = function(req, res) {
 
 		model.create(req.body)
@@ -18,11 +30,7 @@ module.exports = function(app) {
 	};
 
      api.authenticate = function(req, res) {
-
-         model.findOne({
-             login: req.body.login,
-             password: req.body.password
-         })
+         model.findOne(req.body)
          .then(function(user) {
              if (!user) {
                  console.log('Invalid Login/password');
@@ -33,7 +41,11 @@ module.exports = function(app) {
                      expiresIn: 84600
                  });
                  console.log('Authenticated: token add in response');
-                 res.set('x-access-token', token); 
+                 var objJson = {
+                     'x-access-token' : token,
+                     'userId' : user.id
+                }
+                 res.json(objJson);
                  res.end(); 
              }
          });
