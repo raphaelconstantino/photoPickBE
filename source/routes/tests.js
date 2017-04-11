@@ -15,4 +15,8 @@ module.exports = function(app) {
 	app.route('/tests/:id')
 		.delete(api.removeById)
 		.put(api.addVote);
+
+
+	app.route('/image/:file')
+		.get(api.getImage);		
 };

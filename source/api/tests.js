@@ -1,9 +1,7 @@
 var mongoose = require('mongoose');
 const formidable = require('formidable')
 const path = require('path')
-const uploadDir = path.join(__dirname, '/..', '/..', '/files/') //i made this  before the function because i use it multiple times for deleting later
-
-
+const uploadDir = path.join(__dirname, '/..', '/..', '/files/') 
 
 module.exports = function(app) {
 
@@ -123,7 +121,8 @@ module.exports = function(app) {
 		})
 		form.on('fileBegin', function (name, file) {
 			const [fileName, fileExt] = file.name.split('.');
-			var sName = path.join(uploadDir, `${fileName}_${new Date().getTime()}.${fileExt}`);
+			var ext = `${fileName}_${new Date().getTime()}.${fileExt}`;
+			var sName = path.join(uploadDir, `${ext}`);
 			file.path = sName;
 
 			// Insert findById
@@ -131,7 +130,7 @@ module.exports = function(app) {
 			var userId = req.headers.userid;
 
 			var obj = {
-				file : sName,
+				file : ext,
 				userId : userId,
 				category : category
 			}
@@ -143,6 +142,10 @@ module.exports = function(app) {
 		})
 	}
 	
+	api.getImage = function (req, res) {
+		res.sendFile(path.join(uploadDir, `${req.params.file}`));
+	}
+
 	return api;
 };
 
