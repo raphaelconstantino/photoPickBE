@@ -37,10 +37,10 @@ module.exports = function(app) {
                  res.sendStatus(401);
              } else {
                 console.log(user.login)
-                 var token = jwt.sign({login: user.login}, app.get('secret'), {
+                 var token = jwt.sign({login: user.login, userId: user._id}, app.get('secret'), {
                      expiresIn: 84600
                  });
-                 console.log('Authenticated: token add in response');
+
                  var objJson = {
                      'x-access-token' : token,
                      'userId' : user.id

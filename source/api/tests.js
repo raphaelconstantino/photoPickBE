@@ -1,5 +1,6 @@
 var mongoose = require('mongoose');
-const formidable = require('formidable')
+const formidable = require('formidable');
+var jwt  = require('jsonwebtoken'); 
 const path = require('path')
 const uploadDir = path.join(__dirname, '/..', '/..', '/files/') 
 
@@ -10,8 +11,9 @@ module.exports = function(app) {
 	var model = mongoose.model('Tests');
 
 	api.list = function(req, res) {
-		
-		model.find({userId : req.headers.userid})
+		var userId = jwt.decode(req.headers["x-access-token"]).userId;
+
+		model.find({userId : userId})
 		.then(function(tests) {
 			res.json(tests);
 		}, function(error) {
@@ -25,10 +27,11 @@ module.exports = function(app) {
 		// Também validar o karma do user para saber
 		// se ele já votou o suficiente para ser votado
 		// Irá fazer um join com tabela de usuario???
-		console.log(req.headers.userid)
+		var userId = jwt.decode(req.headers["x-access-token"]).userId;
+
 		model.findOne({
-			"votes.userVotingId" : { $nin : [req.headers.userid] } ,
-			"userId" : { $ne: req.headers.userid }
+			"votes.userVotingId" : { $nin : [userId] } ,
+			"userId" : { $ne: userId }
 		})
 		.then(function(tests) {
 			res.json(tests);
@@ -91,7 +94,10 @@ module.exports = function(app) {
 		// Adicionar +1pto para usuario que está votando (_id deste user está no body do request)
 		// E remover -1pto para usuario que está recebendo voto ( _id deste user está no response da operação)
 
-		var idUserVoting = req.body.userVotingId;
+		var idUserVoting = jwt.decode(req.headers["x-access-token"]).userId;
+		
+		var vote = req.body;
+		vote["userVotingId"] = idUserVoting;
 
 		model.findByIdAndUpdate(req.params.id, { $push : { votes : req.body } })
 			.then(function(test) {
@@ -107,7 +113,7 @@ module.exports = function(app) {
 
 	};
 
-	api.add = function (req, res, next) { // This is just for my Controller same as app.post(url, function(req,res,next) {....
+	api.add = function (req, res, next) { 
 		var form = new formidable.IncomingForm();
 		form.multiples = true;
 		form.keepExtensions = true;
@@ -127,7 +133,7 @@ module.exports = function(app) {
 
 			// Insert findById
 			var category = req.headers.category;
-			var userId = req.headers.userid;
+			var userId = jwt.decode(req.headers["x-access-token"]).userId;
 
 			var obj = {
 				file : ext,
