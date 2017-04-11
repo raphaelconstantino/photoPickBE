@@ -105,7 +105,7 @@ module.exports = function(app) {
 				// Remove -3 points to user being voted
 				app.api.auth.addAndRemovePoints(test.userId, idUserVoting, res);
 
-				res.end(); 
+				res.json(info);
 			}, function(error) {
 				console.log(error);
 				res.sendStatus(500);
