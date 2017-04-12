@@ -55,6 +55,11 @@ module.exports = function(app) {
 
          var token = req.headers['x-access-token'];
 
+         if (token == undefined)
+         {
+            token = req.query["x-access-token"];
+         }
+
          if (token) {
              console.log('Token received, decoded');
              jwt.verify(token, app.get('secret'), function(err, decoded) {
